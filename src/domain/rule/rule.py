@@ -1,13 +1,8 @@
 from typing import List, Literal, Dict
 from pydantic import BaseModel, Field, validator
 
-import os
-import sys
-
-sys.path.append(os.path.abspath("../parameter_locations/"))
-
-from .parameter_locations import ParameterLocation, ParameterLocations
-from .parameter import Parameter
+from src.domain.parameter_locations.parameter_locations import ParameterLocation, ParameterLocations
+from src.domain.parameter_locations.parameter import Parameter
 
 
 class ParameterColumnLocation(BaseModel):
@@ -100,12 +95,13 @@ class CommonParameter(BaseModel):
 
 class Rule(BaseModel):
     common_parameter: CommonParameter
-    converter_rules: List[ConverterRule]
+    converter_rules: Dict[str, ConverterRule]
 
     class Config:
         allow_mutation = False
 
     @validator("converter_rules")
-    def _validate_no_duplicate_marker(cls, value: List[ConverterRule]):
-        if len(set([i.marker for i in value])) != len(value):
+    def _validate_no_duplicate_marker(cls, value: Dict[str, ConverterRule]):
+        if len(set([i.marker for i in value.values()])) != len(value):
             raise ValueError("Each element of the markers in 'converter_rules' of the Rule must be unique")
+        return value

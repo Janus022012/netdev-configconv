@@ -1,14 +1,11 @@
-import sys
-import os
 import yaml
 
-sys.path.append(os.path.abspath("../../domain/rule"))
-from .rule import Rule
-from .rule_repository import RuleRepository
+from src.domain.rule.rule import Rule
+from src.domain.rule.rule_repository import RuleRepository
 
 
 class RuleYamlImpl(RuleRepository):
-    def __init__(self, rule_file: str):
+    def __init__(self, rule_file: str) -> None:
         super(RuleYamlImpl, self).__init__(rule_file)
 
     def read(self) -> Rule:

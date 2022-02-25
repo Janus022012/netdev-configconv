@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from rule import Rule
+from .rule import Rule
 
 import os
 
