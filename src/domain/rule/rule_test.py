@@ -1,30 +1,32 @@
-from typing import Dict
+from typing import Dict, Any
 import pytest
 
-from .rule import ParameterColumnLocation, ParameterLocationSource, CommandCondition, Options, ConverterRule, CommonParameter, Rule
+from .rule import ParameterColumnLocation, ParameterLocationSource, CommandCondition, Options, ConverterRule, CommonParameter, Rule, IsEmptyCondition, IsContainedCondition
+from src.domain.parameter_locations.parameter_locations import ParameterLocation, ParameterLocations
+from src.domain.parameter_locations.parameter import Parameter
 
 
 @pytest.mark.parametrize(
     "test_input,test_result,test_exception_result", [
-        # correct
+        # 0. correct
         (
                 {"name": "Example", "column_number": "A"},
                 ParameterColumnLocation(name="Example", column_number="A"),
                 None
         ),
-        # empty name
+        # 1. empty name
         (
                 {"name": "", "column_number": "A"},
                 None,
                 ValueError("ensure this value has at least 1 characters (type=value_error.any_str.min_length; limit_value=1)")
         ),
-        # empty column_number
+        # 2. empty column_number
         (
                 {"name": "Example", "column_number": ""},
                 None,
                 ValueError("ensure this value has at least 1 characters (type=value_error.any_str.min_length; limit_value=1)")
         ),
-        # invalid syntax column_number
+        # 3. invalid syntax column_number
         (
                 {"name": "Example", "column_number": "1"},
                 None,
@@ -105,21 +107,19 @@ def test_parameter_column_location(test_input: Dict[str, str], test_result: Para
         (
                 {
                     "parameter_column_locations": [{"name": "Example", "column_number": "A"}],
-                    "row_from": 0,
                     "row_to": 1,
                 },
                 None,
-                ValueError("the 'row_from' property of the ParameterSaveLocationSource must not be empty and must be greater than 1")
+                ValueError("row_from\n  field required (type=value_error.missing)")
         ),
         # 6.empty row_to
         (
                 {
                     "parameter_column_locations": [{"name": "Example", "column_number": "A"}],
                     "row_from": 1,
-                    "row_to": 0,
                 },
                 None,
-                ValueError('ensure this value is greater than or equal to 1 (type=value_error.number.not_ge; limit_value=1)')
+                ValueError('1 validation error for ParameterLocationSource\nrow_to\n  field required (type=value_error.missing)')
         ),
         # 7.invalid row_to
         (
@@ -144,58 +144,122 @@ def test_parameter_location_source(test_input: Dict[str, str], test_result: Para
 
 @pytest.mark.parametrize(
     "test_input,test_result,test_exception_result", [
-        # correct
+        # 0.correct
         (
                 {
-                    "condition": "Example",
-                    "action": "Delete",
-                    "command": ["Command"],
-                 },
-                CommandCondition(
-                    condition="Example",
-                    action="Delete",
-                    command=["Command"],
-                ),
+                    "parameter_column_locations": [{"name": "Example", "column_number": "A"}],
+                    "row_from": 1,
+                    "row_to": 3,
+                },
+                [
+                    ParameterLocations(locations=[ParameterLocation(name="Example", cell_number="A1")]),
+                    ParameterLocations(locations=[ParameterLocation(name="Example", cell_number="A2")]),
+                    ParameterLocations(locations=[ParameterLocation(name="Example", cell_number="A3")]),
+                ],
                 None
-        ),
-        # empty condition
-        (
-            {
-                "condition": "",
-                "action": "Delete",
-                "command": ["Command"],
-            },
-            None,
-            ValueError("ensure this value has at least 1 characters (type=value_error.any_str.min_length; limit_value=1)")
-        ),
-        # invalid syntax action
-        (
-                {
-                    "condition": "Example",
-                    "action": "Multiply",
-                    "command": ["Command"],
-                },
-                None,
-                ValueError("unexpected value; permitted: 'Delete', 'Add' (type=value_error.const; given=Multiply; permitted=('Delete', 'Add'))")
-        ),
-        # empty command
-        (
-                {
-                    "condition": "Example",
-                    "action": "Multiply",
-                    "command": [],
-                },
-                None,
-                ValueError("ensure this value has at least 1 items (type=value_error.list.min_items; limit_value=1)")
         ),
     ]
 )
-def test_command_condition(test_input: Dict[str, str], test_result: CommandCondition, test_exception_result: Exception):
+def test_convert_to_parameter_locations_list(test_input: Dict[str, str], test_result: ParameterLocationSource, test_exception_result: Exception):
     if test_result:
-        assert CommandCondition(**test_input) == test_result
+        assert ParameterLocationSource(**test_input).convert_to_parameter_locations_list() == test_result
     else:
         with pytest.raises(Exception) as e:
-            _ = CommandCondition(**test_input)
+            _ = ParameterLocationSource(**test_input).convert_to_parameter_locations_list()
+        assert str(test_exception_result) in str(e.value)
+
+
+# @pytest.mark.parametrize(
+#     "test_input,test_result,test_exception_result", [
+#         # 0. correct
+#         (
+#                 {
+#                     "condition": {
+#                         "condition_type": "isEmpty",
+#                         "target_parameters": ["Example"]
+#                     },
+#                     "action": "Delete",
+#                     "command": ["Command"],
+#                  },
+#                 CommandCondition(
+#                     condition=IsEmptyCondition(
+#                         type="isEmpty",
+#                         target_parameters=["Example"]
+#                     ),
+#                     action="Delete",
+#                     command=["Command"],
+#                 ),
+#                 None
+#         ),
+#         # 1. empty condition
+#         (
+#             {
+#                 "condition": "",
+#                 "action": "Delete",
+#                 "command": ["Command"],
+#             },
+#             None,
+#             ValueError("ensure this value has at least 1 characters (type=value_error.any_str.min_length; limit_value=1)")
+#         ),
+#         # 2. invalid syntax action
+#         (
+#                 {
+#                     "condition": "Example",
+#                     "action": "Multiply",
+#                     "command": ["Command"],
+#                 },
+#                 None,
+#                 ValueError("unexpected value; permitted: 'Delete', 'Add' (type=value_error.const; given=Multiply; permitted=('Delete', 'Add'))")
+#         ),
+#         # 3. empty command
+#         (
+#                 {
+#                     "condition": "Example",
+#                     "action": "Multiply",
+#                     "command": [],
+#                 },
+#                 None,
+#                 ValueError("ensure this value has at least 1 items (type=value_error.list.min_items; limit_value=1)")
+#         ),
+#     ]
+# )
+# def test_command_condition(test_input: Dict[str, str], test_result: CommandCondition, test_exception_result: Exception):
+#     if test_result:
+#         assert CommandCondition(**test_input) == test_result
+#     else:
+#         with pytest.raises(Exception) as e:
+#             _ = CommandCondition(**test_input)
+#         assert str(test_exception_result) in str(e.value)
+
+
+@pytest.mark.parametrize(
+    "test_input,test_result,test_exception_result", [
+        # 0. correct
+        (
+                {
+                    "command_condition": {
+                        "condition": {
+                            "type": 'isEmpty',
+                            "target_parameters": ["Example"]
+                        },
+                        "action": "Delete",
+                        "commands": ["Command1"],
+                    },
+                    "commands": ["    Command1", "     Command2"],
+                    "parameters": [Parameter(name="Example", value="")],
+                },
+                ["     Command2"],
+                None
+        ),
+    ]
+)
+def test_apply_command_condition(test_input: Dict[str, Any], test_result: ParameterLocationSource, test_exception_result: Exception):
+    print(test_input)
+    if test_result:
+        assert CommandCondition(**test_input["command_condition"]).apply_command_condition(test_input["commands"], test_input["parameters"]) == test_result
+    else:
+        with pytest.raises(Exception) as e:
+            _ = CommandCondition(**test_input["command_condition"]).apply_command_condition(test_input["commands"], test_input["parameters"])
         assert str(test_exception_result) in str(e.value)
 
 
