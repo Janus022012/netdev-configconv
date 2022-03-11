@@ -24,9 +24,12 @@ from src.domain.rule.rule import Rule
                                 'commands': ['hostname {HostName}'],
                                 'conditions': [
                                     {
-                                        'condition': 'HostName=xx',
+                                        'condition': {
+                                            "type": "isEmpty",
+                                            "target_parameters": ["HostName"]
+                                        },
                                         'action': 'Add',
-                                        'command': ['hostname {HostName}']
+                                        'commands': ['hostname {HostName}']
                                     }
                                 ],
                                 'options': {

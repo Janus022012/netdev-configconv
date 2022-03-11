@@ -14,8 +14,8 @@ from src.domain.config.config import Config, ConfigSource
                     "config_sample_file": os.path.abspath("../../../test/data/config_sample.log"),
                     "config": Config(
                         config_sources=[
-                            ConfigSource(marker="%%parameter1%%", command_groups=["ddddddddddddddddd\n", "!\n"]),
-                            ConfigSource(marker="%%parameter2%%", command_groups=["eeeeeeeeeeeeeeeee\n", "!\n"])
+                            ConfigSource(marker="%%parameter1%%", command_groups=[["ddddddddddddddddd", "!"]]),
+                            ConfigSource(marker="%%parameter2%%", command_groups=[["eeeeeeeeeeeeeeeee", "!"]])
                         ]
                     ),
                     "output_config_file": os.path.abspath("../../../test/data/test_device.log")

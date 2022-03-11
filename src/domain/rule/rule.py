@@ -1,63 +1,30 @@
 from typing import List, Literal, Dict, Union
 from pydantic import BaseModel, Field, validator
 
-from src.domain.parameter_locations.parameter_locations import ParameterLocation, ParameterLocations
-from src.domain.parameter_locations.parameter import Parameter
+from src.domain.config.config import ConfigSource
+from src.domain.parameter_locations.parameter_locations import ParameterLocationSource
+from src.domain.parameter_locations.parameter import Parameter, ParameterGroup
 import abc
 import copy
 import re
 
 
-class ParameterColumnLocation(BaseModel):
-    name: str = Field(..., min_length=1)
-    column_number: str = Field(..., min_length=1, regex=r"[A-Z]+")
-
-
-class ParameterLocationSource(BaseModel):
-    parameter_column_locations: List[ParameterColumnLocation] = Field(..., min_items=1)
-    row_from: int = Field(..., ge=1)
-    row_to: int = Field(..., ge=1)
-
-    class Config:
-        allow_mutation = False
-
-    @validator("row_to")
-    def _validate_row_to(cls, value, values) -> int:
-        if "row_from" not in values.keys():
-            raise ValueError("the 'row_from' property of the ParameterSaveLocationSource must not be empty and must be greater than 1")
-        if value < values["row_from"]:
-            raise ValueError("the 'row_to' property of the ParameterSaveLocationSource must be greater than the 'row_from' property")
-        return value
-
-    def convert_to_parameter_locations_list(self) -> List[ParameterLocations]:
-        return [
-            ParameterLocations(
-                locations=[
-                    ParameterLocation(
-                        name=i.name,
-                        cell_number=f"{i.column_number}{j}"
-                    ) for i in self.parameter_column_locations
-                ]
-            ) for j in range(self.row_from, self.row_to+1)
-        ]
-
-
 class Condition:
     @abc.abstractmethod
     def evaluate(self, parameters: List[Parameter]) -> bool:
-        pass
+        raise NotImplementedError("The 'evaluate' method must be implemented")
 
 
 class IsEmptyCondition(Condition, BaseModel):
     type: Literal['isEmpty']
     target_parameters: List[str] = Field(..., min_items=1)
 
-    def evaluate(self, parameters: List[Parameter]) -> bool:
-        for parameter in parameters:
-            if parameter.name in self.target_parameters:
-                if not parameter.value:
-                    return True
-        return False
+    def evaluate(self, parameter_group: ParameterGroup) -> bool:
+        for target_parameter in self.target_parameters:
+            if target_parameter in parameter_group:
+                if parameter_group.get(target_parameter).value:
+                    return False
+        return True
 
 
 class IsContainedCondition(Condition, BaseModel):
@@ -65,12 +32,14 @@ class IsContainedCondition(Condition, BaseModel):
     target_parameters: List[str] = Field(..., min_items=1)
     target_string: str = Field(..., min_length=1)
 
-    def evaluate(self, parameters: List[Parameter]) -> bool:
-        for parameter in parameters:
-            if parameter.name in self.target_parameters:
-                if re.search(self.target_string, parameter.value):
-                    return True
-        return False
+    def evaluate(self, parameter_group: ParameterGroup) -> bool:
+        for target_parameter in self.target_parameters:
+            if target_parameter in parameter_group:
+                if not re.search(self.target_string, parameter_group.get(target_parameter).value):
+                    return False
+            else:
+                return False
+        return True
 
 
 class CommandCondition(BaseModel):
@@ -81,27 +50,23 @@ class CommandCondition(BaseModel):
     class Config:
         allow_mutation = False
 
-    def apply_command_condition(self, commands: List[str], parameters: List[Parameter]) -> List[str]:
-        copied_commands = copy.copy(commands)
-        copied_parameters = copy.copy(parameters)
-
-        if self.condition.evaluate(copied_parameters):
-            return Action.build(self.action).do(self, copied_commands)
-        return copied_commands
+    def apply_command_condition(self, parameter_group: ParameterGroup, conditional_commands: List[str], applicable_commands: List[str]) -> List[str]:
+        if self.condition.evaluate(parameter_group):
+            return Action.build(self.action).do(self, conditional_commands, applicable_commands)
+        return applicable_commands
 
 
 class Action:
-    def __str__(self):
-        return "Action"
+    action_type = "Action"
 
     @abc.abstractmethod
-    def do(self, command_condition: CommandCondition, inserted_commands: List[str]) -> List[str]:
+    def do(self, command_condition: CommandCondition, conditional_command: List[str], applicable_commands: List[str]) -> List[str]:
         pass
 
     @classmethod
     def build(cls, action: str):
-        if str(cls()) == "Action":
-            for subclass_name, subclass in {str(c()): c for c in cls.__subclasses__()}.items():
+        if cls.action_type == "Action":
+            for subclass_name, subclass in {c.action_type: c for c in cls.__subclasses__()}.items():
                 if subclass_name == action:
                     return subclass()
             raise ValueError(f"The action name of '{action}' have not implemented yet")
@@ -110,53 +75,99 @@ class Action:
 
 
 class Delete(Action):
-    def __str__(self):
-        return "Delete"
+    action_type = "Delete"
 
-    def do(self, command_condition: CommandCondition, inserted_commands: List[str]) -> List[str]:
+    def do(self, command_condition: CommandCondition, conditional_command: List[str], applicable_commands: List[str]) -> List[str]:
         result: List[str] = []
-        copied_inserted_commands = copy.copy(inserted_commands)
 
-        for copied_inserted_command in copied_inserted_commands:
-            if not any([re.search(target_command, copied_inserted_command) for target_command in command_condition.commands]):
-                result.append(copied_inserted_command)
+        for ac in applicable_commands:
+            flag = True
+            for cc in conditional_command:
+                if re.search(ac, cc):
+                    flag = False
+            if flag:
+                result.append(ac)
         return result
 
 
 class Add(Action):
-    def __str__(self):
-        return "Add"
+    action_type = "Add"
 
-    def do(self, command_condition: CommandCondition, inserted_commands: List[str]) -> List[str]:
-        return copy.copy(inserted_commands) + copy.copy(command_condition.commands)
+    def do(self, command_condition: CommandCondition, conditional_command: List[str], applicable_commands: List[str]) -> List[str]:
+        return copy.copy(applicable_commands) + copy.copy(conditional_command)
 
 
 class Options(BaseModel):
     indent_level: int = Field(0, ge=0)
     filling_each_commands: bool = Field(False)
-    filling_each_command_groups: bool = Field(False)
+    filling_each_commands_group: bool = Field(False)
 
     class Config:
         allow_mutation = False
 
-    def assign_options(self, commands: List[str], filling: str) -> List[str]:
-        result: List[str] = []
-        copied_commands = copy.copy(commands)
-
-        if self.filling_each_commands:
-            for i, command in enumerate(copied_commands):
-                if i+1 % 2:
-                    if i != len(copied_commands):
-                        result.append(filling)
-                result.append(command)
-
-        if self.filling_each_commands:
-            result.insert(0, filling)
-            result.insert(len(copied_commands), filling)
+    def assign_options(self, commands_group: List[List[str]], filling: str) -> List[List[str]]:
+        result: List[List[str]] = copy.deepcopy(commands_group)
 
         if self.indent_level:
-            result = [""*self.indent_level + command for command in result if command != filling]
+            result: List[List[str]] = self._apply_indent_level(
+                indent_level=self.indent_level,
+                filling=filling,
+                commands_group=result
+            )
 
+        if self.filling_each_commands:
+            result: List[List[str]] = self._apply_filling_each_commands(
+                filling=filling,
+                commands_group=result
+            )
+
+        if self.filling_each_commands_group:
+            result: List[List[str]] = self._apply_filling_each_commands_group(
+                filling=filling,
+                commands_group=result
+            )
+
+        return result
+
+    @staticmethod
+    def _apply_indent_level(indent_level: int, filling: str, commands_group: List[List[str]]) -> List[List[str]]:
+        result: List[List[str]] = []
+
+        for commands in commands_group:
+            commands_result = []
+            for command in commands:
+                if command != filling:
+                    commands_result.append("" * indent_level + command)
+            result.append(commands)
+
+        return result
+
+    @staticmethod
+    def _apply_filling_each_commands(filling: str, commands_group: List[List[str]]) -> List[List[str]]:
+        result: List[List[str]] = []
+
+        for commands in commands_group:
+            commands_result = []
+            for i, command in enumerate(commands):
+                if i + 1 % 2:
+                    if i != len(commands_result):
+                        commands_result.append(filling)
+                commands_result.append(command)
+            result.append(commands_result)
+
+        return result
+
+    @staticmethod
+    def _apply_filling_each_commands_group(filling: str, commands_group: List[List[str]]) -> List[List[str]]:
+        result: List[List[str]] = []
+
+        for commands in commands_group:
+            commands_result = []
+            for command in commands:
+                commands_result.append(command)
+                if command == commands[-1]:
+                    commands_result.append(filling)
+            result.append(commands_result)
         return result
 
 
@@ -178,22 +189,36 @@ class ConverterRule(BaseModel):
     class Config:
         allow_mutation = False
 
-    def parse_commands(self, parameters: List[Parameter], common_parameter: CommonParameter) -> str:
-        copied_parameter = copy.copy(parameters)
-        result = self._get_inserted_commands(self.commands, copied_parameter)
+    def make_config_source(self, parameter_group_list: List[ParameterGroup], common_parameter: CommonParameter) -> ConfigSource:
+        commands_group: List[List[str]] = []
 
         # conditionの適用
         for command_condition in self.conditions:
-            result = command_condition.apply_command_condition(result, parameters)
+
+            for parameter_group in parameter_group_list:
+
+                commands_group.append(
+                    command_condition.apply_command_condition(
+                        parameter_group=parameter_group,
+                        conditional_commands=self._get_params_inserted_commands(
+                            commands=command_condition.commands,
+                            parameter_group=parameter_group
+                        ),
+                        applicable_commands=self._get_params_inserted_commands(
+                            commands=self.commands,
+                            parameter_group=parameter_group
+                        ),
+                    )
+                )
 
         # optionの適用
-        result = self.options.assign_options(result, common_parameter.filling)
+        result: List[List[str]] = self.options.assign_options(commands_group, common_parameter.filling)
 
-        return "\n".join(result)
+        return ConfigSource(marker=self.marker, command_groups=result)
 
     @staticmethod
-    def _get_inserted_commands(commands: List[str], parameters: List[Parameter]) -> List[str]:
-        return [command.format(**{parameter.name: parameter.value for parameter in parameters}) for command in commands]
+    def _get_params_inserted_commands(commands: List[str], parameter_group: ParameterGroup) -> List[str]:
+        return [command.format_map(parameter_group.to_dict()) for command in commands]
 
 
 class Rule(BaseModel):

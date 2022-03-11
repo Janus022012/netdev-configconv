@@ -4,7 +4,7 @@ from typing import List
 import os
 
 from .parameter_locations import ParameterLocations
-from .parameter import Parameter
+from .parameter import ParameterGroup
 
 
 class ParameterLocationsRepository(ABC):
@@ -33,5 +33,5 @@ class ParameterLocationsRepository(ABC):
         raise NotImplementedError("The 'get_sheets' method of the ParameterLocationsRepository must be implemented")
 
     @abstractmethod
-    def read(self, sheet_name: str, parameter_locations: ParameterLocations) -> List[Parameter]:
+    def read(self, sheet_name: str, parameter_locations: ParameterLocations) -> ParameterGroup:
         raise NotImplementedError("The 'read' method of the ParameterLocationsRepository must be implemented")

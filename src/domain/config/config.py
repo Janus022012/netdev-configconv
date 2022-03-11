@@ -4,7 +4,7 @@ from typing import List
 
 class ConfigSource(BaseModel):
     marker: str = Field(..., min_length=5, regex=r"%{2}\w+%{2}")
-    command_groups: List[str] = Field(..., min_items=1)
+    command_groups: List[List[str]] = Field(..., min_items=1)
 
     class Config:
         allow_mutation = False
@@ -22,7 +22,7 @@ class Config(BaseModel):
     def get_markers(self) -> List[str]:
         return [config_source.marker for config_source in self.config_sources]
 
-    def get_commands_group(self, marker: str) -> List[str]:
+    def get_commands_group(self, marker: str) -> List[List[str]]:
         for config_source in self.config_sources:
             if marker == config_source.marker:
                 return config_source.command_groups
