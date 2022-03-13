@@ -120,6 +120,7 @@ class Options(BaseModel):
                 filling=filling,
                 commands_group=result
             )
+        
 
         if self.filling_each_commands_group:
             result: List[List[str]] = self._apply_filling_each_commands_group(
@@ -137,8 +138,8 @@ class Options(BaseModel):
             commands_result = []
             for command in commands:
                 if command != filling:
-                    commands_result.append("" * indent_level + command)
-            result.append(commands)
+                    commands_result.append(" " * indent_level + command)
+            result.append(commands_result)
 
         return result
 
@@ -149,10 +150,9 @@ class Options(BaseModel):
         for commands in commands_group:
             commands_result = []
             for i, command in enumerate(commands):
-                if i + 1 % 2:
-                    if i != len(commands_result):
-                        commands_result.append(filling)
                 commands_result.append(command)
+                if len(commands) != (i+1):
+                    commands_result.append(filling)
             result.append(commands_result)
 
         return result
@@ -163,9 +163,9 @@ class Options(BaseModel):
 
         for commands in commands_group:
             commands_result = []
-            for command in commands:
+            for i, command in enumerate(commands):
                 commands_result.append(command)
-                if command == commands[-1]:
+                if len(commands) == (i+1):
                     commands_result.append(filling)
             result.append(commands_result)
         return result
@@ -192,29 +192,23 @@ class ConverterRule(BaseModel):
     def make_config_source(self, parameter_group_list: List[ParameterGroup], common_parameter: CommonParameter) -> ConfigSource:
         commands_group: List[List[str]] = []
 
-        # conditionの適用
-        for command_condition in self.conditions:
+        for parameter_group in parameter_group_list:
+            commands: List[str] = self._get_params_inserted_commands(commands=self.commands,parameter_group=parameter_group)
 
-            for parameter_group in parameter_group_list:
+            for command_condition in self.conditions:
 
-                commands_group.append(
-                    command_condition.apply_command_condition(
-                        parameter_group=parameter_group,
-                        conditional_commands=self._get_params_inserted_commands(
-                            commands=command_condition.commands,
-                            parameter_group=parameter_group
-                        ),
-                        applicable_commands=self._get_params_inserted_commands(
-                            commands=self.commands,
-                            parameter_group=parameter_group
-                        ),
-                    )
+                commands = command_condition.apply_command_condition(
+                    parameter_group=parameter_group,
+                    conditional_commands=self._get_params_inserted_commands(commands=command_condition.commands, parameter_group=parameter_group),
+                    applicable_commands=commands,
                 )
+
+            commands_group.append(commands)
 
         # optionの適用
         result: List[List[str]] = self.options.assign_options(commands_group, common_parameter.filling)
 
-        return ConfigSource(marker=self.marker, command_groups=result)
+        return ConfigSource(marker=self.marker, commands_group=result)
 
     @staticmethod
     def _get_params_inserted_commands(commands: List[str], parameter_group: ParameterGroup) -> List[str]:
