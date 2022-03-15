@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
 from typing import List
-
-import os
-
+from logging import config
 from .parameter_locations import ParameterLocations
 from .parameter import ParameterGroup
+
+import logging
+import os
+
+config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
+
 
 
 class ParameterLocationsRepository(ABC):

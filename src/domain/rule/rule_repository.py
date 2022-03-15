@@ -1,7 +1,12 @@
 from abc import ABC, abstractmethod
+from logging import config
 from .rule import Rule
-
+import logging
 import os
+
+
+config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
 
 
 class RuleRepository(ABC):

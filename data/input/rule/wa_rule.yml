@@ -1,0 +1,122 @@
+common_parameter:
+  filling: "!"
+converter_rules:
+  HOSTNAME:
+    description: "ホスト名"
+    marker: "%%host_name%%"
+    data:
+      parameter_column_locations: 
+        - name: "HostName"
+          column_number: "D"
+      row_from: 9
+      row_to:   9
+    commands: 
+      - "hostname {HostName}"
+    validations: []
+    conditions: []
+    options:
+      indent_level: 0
+      filling_each_commands: False
+      filling_each_commands_group: False
+  DETOUR_VLAN:
+      description: "VLAN番号"
+      marker: "%%detour_vlan%%"
+      data:
+        parameter_column_locations: 
+          - name: "DetourVLAN"
+            column_number: "AH"
+        row_from: 103
+        row_to:   103
+      commands: 
+        - "vlan-type tagged VLAN0 tag-id {DetourVLAN}"
+      validations: []
+      conditions: []
+      options:
+        indent_level: 2
+        filling_each_commands: False
+        filling_each_commands_group: False
+  LTERT_VLAN:
+      description: "VLAN番号"
+      marker: "%%ltert_vlan%%"
+      data:
+        parameter_column_locations: 
+          - name: "LtertVLAN"
+            column_number: "AP"
+        row_from: 103
+        row_to:   103
+      commands: 
+        - "vlan-type tagged VLAN1 tag-id {LtertVLAN}"
+      validations: []
+      conditions: []
+      options:
+        indent_level: 2
+        filling_each_commands: False
+        filling_each_commands_group: False
+  LOOPBACK_ADDRESS:
+      description: "ループバックアドレス"
+      marker: "%%loopback_address%%"
+      data:
+        parameter_column_locations: 
+          - name: "LoopbackAddress"
+            column_number: "N"
+        row_from: 117
+        row_to:   117
+      commands: 
+        - "ip address {LoopbackAddress}/32"
+      validations: []
+      conditions: []
+      options:
+        indent_level: 2
+        filling_each_commands: False
+        filling_each_commands_group: False
+  LTERT_ADDRESS:
+    description: "VLANのアドレス"
+    marker: "%%ltert_address%%"
+    data:
+      parameter_column_locations: 
+        - name: "LtertAddress"
+          column_number: "N"
+      row_from: 119
+      row_to:   119
+    commands: 
+      - "ip address {LtertAddress}/30"
+    validations: []
+    conditions: []
+    options:
+      indent_level: 2
+      filling_each_commands: False
+      filling_each_commands_group: False
+  VLAN1_L3_IP_ADDRESS: 
+      description: 'VLAN1のIPアドレス'
+      marker: '%%vlan1_l3_ip_address%%'
+      data:
+        parameter_column_locations: 
+          - name: "Vlan1L3IpAddress"
+            column_number: "N"
+        row_from: 127
+        row_to: 127
+      commands: 
+        - 'ip route 172.24.0.0/16 {Vlan1L3IpAddress} VLAN1'
+      validations: []
+      conditions: []
+      options:
+        indent_level: 2
+        filling_each_commands: False
+        filling_each_commands_group: False
+  SIM_IP_ADDRESS: 
+      description: 'SIMIP監視'
+      marker: '%%sim_ip_address%%'
+      data:
+        parameter_column_locations: 
+          - name: "SimIpAddress"
+            column_number: "AR"
+        row_from: 94
+        row_to: 94
+      commands: 
+        - 'event ip unreach-host {SimIpAddress}'
+      validations: []
+      conditions: []
+      options:
+        indent_level: 2
+        filling_each_commands: False
+        filling_each_commands_group: False

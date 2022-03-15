@@ -1,12 +1,19 @@
 from typing import List, Literal, Dict, Union
 from pydantic import BaseModel, Field, validator
-
+from logging import config
 from src.domain.config.config import ConfigSource
 from src.domain.parameter_locations.parameter_locations import ParameterLocationSource
 from src.domain.parameter_locations.parameter import Parameter, ParameterGroup
+
 import abc
 import copy
 import re
+import logging
+import os
+
+
+config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
 
 
 class Condition:
@@ -97,6 +104,49 @@ class Add(Action):
         return copy.copy(applicable_commands) + copy.copy(conditional_command)
 
 
+class CustomValidator:
+    @abc.abstractmethod
+    def is_valid(self, parameter: Parameter) -> bool:
+        raise NotImplementedError("The 'validate' method of the Validator must be implemented")
+
+
+class RegexValidator(CustomValidator, BaseModel):
+    validator_type: Literal['RegexValidator']
+    parameter_name: str = Field(..., min_length=1)
+    pattern: str = Field(..., min_length=1)
+
+    def is_valid(self, parameter_group: ParameterGroup) -> bool:
+        parameter =  parameter_group.get(self.parameter_name)
+        if parameter:
+            return True if re.search(self.pattern, parameter.value) else False
+        else:
+            return False
+
+class NumberRangeValidator(CustomValidator, BaseModel):
+    validator_type: Literal['regexValidator']
+    parameter_name: str = Field(..., min_length=1)
+    min: int = Field(...)
+    max: int = Field(...)
+
+    def is_valid(self, parameter_group: ParameterGroup) -> bool:
+        parameter =  int(parameter_group.get(self.parameter_name))
+        if min <= parameter <= max:
+            return True
+        else:
+            return False
+    
+    
+class ParamsValidation(BaseModel):
+    validator: Union[RegexValidator, NumberRangeValidator] = Field(..., discriminator='validator_type')
+    # TODO Validationの仕組みをどうするか。
+    #       ・やりたい事
+    #           レベルに応じて、処理の中断具合を変えたい(アプリケーションの停止、デバイス単位の停止など)
+    # level: Literal["Error", "Warning", "Info"] = "Info"
+
+
+    def apply_validation(self, parameter_group: ParameterGroup) -> bool:
+        return self.validator.is_valid(parameter_group=parameter_group)
+
 class Options(BaseModel):
     indent_level: int = Field(0, ge=0)
     filling_each_commands: bool = Field(False)
@@ -183,6 +233,7 @@ class ConverterRule(BaseModel):
     marker: str = Field(..., min_length=5, regex=r"%{2}\w+%{2}")
     data: ParameterLocationSource
     commands: List[str] = Field(..., min_items=1)
+    validations: List[ParamsValidation] = Field(..., min_items=0)
     conditions: List[CommandCondition] = Field(..., min_items=0)
     options: Options
 
@@ -193,15 +244,17 @@ class ConverterRule(BaseModel):
         commands_group: List[List[str]] = []
 
         for parameter_group in parameter_group_list:
-            commands: List[str] = self._get_params_inserted_commands(commands=self.commands,parameter_group=parameter_group)
+            if self._apply_validation_all_parameters(self.validations, parameter_group):
 
-            for command_condition in self.conditions:
+                commands: List[str] = self._get_params_inserted_commands(commands=self.commands,parameter_group=parameter_group)
 
-                commands = command_condition.apply_command_condition(
-                    parameter_group=parameter_group,
-                    conditional_commands=self._get_params_inserted_commands(commands=command_condition.commands, parameter_group=parameter_group),
-                    applicable_commands=commands,
-                )
+                for command_condition in self.conditions:
+
+                    commands = command_condition.apply_command_condition(
+                        parameter_group=parameter_group,
+                        conditional_commands=self._get_params_inserted_commands(commands=command_condition.commands, parameter_group=parameter_group),
+                        applicable_commands=commands,
+                    )
 
             commands_group.append(commands)
 
@@ -213,6 +266,16 @@ class ConverterRule(BaseModel):
     @staticmethod
     def _get_params_inserted_commands(commands: List[str], parameter_group: ParameterGroup) -> List[str]:
         return [command.format_map(parameter_group.to_dict()) for command in commands]
+
+    @staticmethod
+    def _apply_validation_all_parameters(validations: List[ParamsValidation], parameter_group: ParameterGroup) -> bool:
+        # TODO Validationの仕組みをどうするか。
+        #       ・やりたい事
+        #           レベルに応じて、処理の中断具合を変えたい(アプリケーションの停止、デバイス単位の停止など)
+        # ここで、戻り値をEnum ValidationLevelにして、それぞれ処理を変更出来れば可能？
+        # 現状は、Validation違反があれば、そのParameterGroupのみSkipという形にする。
+        # return all([validation.apply_validation(parameter_group=parameter_group) for validation in validations])
+        return True
 
 
 class Rule(BaseModel):

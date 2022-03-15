@@ -1,12 +1,15 @@
 from abc import ABC, abstractmethod
+from logging import config
 
+from src.domain.config.config_repository import ConfigRepository
+from src.domain.parameter_locations.parameter_locations_repository import ParameterLocationsRepository
+from src.domain.rule.rule_repository import RuleRepository
+
+import logging
 import os
-import sys
 
-sys.path.append(os.path.abspath("../domain"))
-from .config.config_repository import ConfigRepository
-from .parameter_locations.parameter_locations_repository import ParameterLocationsRepository
-from .rule.rule_repository import RuleRepository
+config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
 
 
 class AbstractParamsCommandUsecase(ABC):

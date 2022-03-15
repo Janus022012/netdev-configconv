@@ -1,9 +1,17 @@
-import openpyxl
 from typing import List
+from logging import config
 
 from src.domain.parameter_locations.parameter import ParameterGroup, Parameter
 from src.domain.parameter_locations.parameter_locations import ParameterLocations
 from src.domain.parameter_locations.parameter_locations_repository import ParameterLocationsRepository
+
+import logging
+import openpyxl
+import os
+
+
+config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
 
 
 class ParameterLocationsExcelImpl(ParameterLocationsRepository):
@@ -28,7 +36,8 @@ class ParameterLocationsExcelImpl(ParameterLocationsRepository):
             parameters.append(
                 Parameter(
                     name=location.name,
-                    value=self.workbook[sheet_name][location.cell_number].value
+                    value=self.workbook[sheet_name][location.cell_number].value,
+                    required=location.required
                 )
             )
 

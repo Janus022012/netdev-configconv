@@ -1,10 +1,18 @@
 from typing import List
 from pydantic import BaseModel, Field, validator
+from logging import config
+
+import logging
+import os
+
+config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
 
 
 class ParameterLocation(BaseModel):
     name: str = Field(..., min_length=1)
     cell_number: str = Field(..., min_length=2,regex=r"^[A-Z]+\d+")
+    required: bool = False
 
     class Config:
         allow_mutation = False
@@ -20,6 +28,7 @@ class ParameterLocations(BaseModel):
 class ParameterColumnLocation(BaseModel):
     name: str = Field(..., min_length=1)
     column_number: str = Field(..., min_length=1, regex=r"[A-Z]+")
+    required: bool = False
 
 
 class ParameterLocationSource(BaseModel):
@@ -44,7 +53,8 @@ class ParameterLocationSource(BaseModel):
                 locations=[
                     ParameterLocation(
                         name=i.name,
-                        cell_number=f"{i.column_number}{j}"
+                        cell_number=f"{i.column_number}{j}",
+                        required=i.required
                     ) for i in self.parameter_column_locations
                 ]
             ) for j in range(self.row_from, self.row_to+1)

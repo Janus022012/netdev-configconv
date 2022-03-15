@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from logging import config
 from typing import List, Type
 
 from src.domain.config.config import Config, ConfigSource
@@ -8,7 +9,12 @@ from src.domain.parameter_locations.parameter import ParameterGroup
 from src.domain.parameter_locations.parameter_locations_repository import ParameterLocationsRepository, ParameterLocations
 from src.domain.rule.rule_repository import RuleRepository
 
+import logging
 import os
+
+
+config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
 
 
 class AbstractConfigCommandUsecase(ABC):
@@ -28,7 +34,7 @@ class ConfigCommandUsecase(AbstractConfigCommandUsecase):
         
     def create_config(self, config_sample_file: str, parameter_sheet_file: str, rule_file: str, output_path: str, exception_sheets: list) -> None:
         # Ruleエンティティの取得
-        rule_repo_inst                  = self.rule_repo(rule_file)
+        rule_repo_inst                  = self.rule_repo(rule_file=rule_file)
         rule_object                     = rule_repo_inst.read()
         converter_rules                 = rule_object.converter_rules
         common_parameter                = rule_object.common_parameter
@@ -50,16 +56,13 @@ class ConfigCommandUsecase(AbstractConfigCommandUsecase):
                 parameter_locations_list: List[ParameterLocations] = converter_rule.data.convert_to_parameter_locations_list()
 
                 for parameter_locations in parameter_locations_list:
+                
+                    parameter_group = parameter_locations_repo_inst.read(sheet_name=device_name, parameter_locations=parameter_locations)
+                
+                    if parameter_group.is_all_required_params_available():
+            
+                        parameter_group_list.append(parameter_group)
 
-                    # パラメータの読取
-                    parameter_group_list.append(
-                        parameter_locations_repo_inst.read(
-                            sheet_name=device_name,
-                            parameter_locations=parameter_locations
-                        )
-                    )
-
-                #
                 config_sources.append(
                     converter_rule.make_config_source(
                             parameter_group_list=parameter_group_list,
@@ -67,9 +70,8 @@ class ConfigCommandUsecase(AbstractConfigCommandUsecase):
                     )
                 )
 
-            #コンフィグの保存
             config_repo_inst.write(
-                config=Config(config_sources),
+                config=Config(config_sources=config_sources),
                 output_config_file=os.path.join(output_path, f"{device_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.log")
             )
 
