@@ -39,7 +39,6 @@ interface MobileEthernet0.0
   ip napt static 192.168.x.x tcp 50022 22 priority 1
   ip napt reserve tcp 22
   ip napt reserve icmp
-  mobile id IP cbm.dwh.jreast.co.jp
   auto-connect
   no shutdown
 !

@@ -1,15 +1,9 @@
-from logging import config
-
+from src.utils.logger import get_custom_logger
 from src.domain.rule.rule import Rule
 from src.domain.rule.rule_repository import RuleRepository
-
-import logging
-import os
 import yaml
 
-
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class RuleYamlImpl(RuleRepository):

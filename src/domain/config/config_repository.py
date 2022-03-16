@@ -1,13 +1,11 @@
 from abc import ABC, abstractmethod
-from logging import config
 from src.domain.config.config import Config
+from src.utils.logger import get_custom_logger
 from .config_exception import ConfigSampleFileNotExistError
-import logging
 import re
 import os
 
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class ConfigRepository(ABC):
@@ -67,7 +65,7 @@ class ConfigRepository(ABC):
     @staticmethod
     def _inspect_marker(line: str) -> bool:
         
-        logger.debug(f"Inspecting a maker in the line({line})...")
+        logger.debug(f"Inspecting a marker in the line({line})...")
 
         result = True if re.search(r"%{2}\w+%{2}", line) else False
 

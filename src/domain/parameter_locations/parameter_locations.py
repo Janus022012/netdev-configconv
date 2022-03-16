@@ -1,14 +1,10 @@
 from typing import List
 from pydantic import BaseModel, Field, validator
-from logging import config
-
+from src.utils.logger import get_custom_logger
 from .parameter_locations_exceptions import RowFromNotExistError, RowFromBiggerThanRowToExistError
 
-import logging
-import os
 
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class ParameterLocation(BaseModel):

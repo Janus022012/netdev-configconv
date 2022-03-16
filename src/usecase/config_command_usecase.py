@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from logging import config
 from typing import List, Type
 
 from src.domain.config.config import Config, ConfigSource
@@ -8,13 +7,11 @@ from src.domain.config.config_repository import ConfigRepository
 from src.domain.parameter_locations.parameter import ParameterGroup
 from src.domain.parameter_locations.parameter_locations_repository import ParameterLocationsRepository, ParameterLocations
 from src.domain.rule.rule_repository import RuleRepository
-
-import logging
+from src.utils.logger import get_custom_logger
 import os
 
 
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class AbstractConfigCommandUsecase(ABC):

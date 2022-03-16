@@ -21,19 +21,19 @@ def run_cli(config_command_usecase: AbstractConfigCommandUsecase, params_command
 
 def main() -> None:
 
-    # try:
-    config_repo = ConfigTxtImpl
-    parameter_locations_repo = ParameterLocationsExcelImpl
-    rule_repo = RuleYamlImpl
-    config_command_usecase: AbstractConfigCommandUsecase = ConfigCommandUsecase(config_repo, parameter_locations_repo, rule_repo)
-    params_command_usecase: AbstractParamsCommandUsecase = ParamsCommandUsecase(config_repo, parameter_locations_repo, rule_repo)
+    try:
+        config_repo = ConfigTxtImpl
+        parameter_locations_repo = ParameterLocationsExcelImpl
+        rule_repo = RuleYamlImpl
+        config_command_usecase: AbstractConfigCommandUsecase = ConfigCommandUsecase(config_repo, parameter_locations_repo, rule_repo)
+        params_command_usecase: AbstractParamsCommandUsecase = ParamsCommandUsecase(config_repo, parameter_locations_repo, rule_repo)
 
-    run_cli(config_command_usecase, params_command_usecase)
-    # except CustomError as e:
-    #     print(e.get_ja_message())
+        run_cli(config_command_usecase, params_command_usecase)
+    except CustomError as e:
+        print(e.get_ja_message())
 
-    # except Exception as e:
-    #     print(f"実行中に以下のエラーが発生しました。\n{e}")
+    except Exception as e:
+        print(f"実行中に以下のエラーが発生しました。\n{e}")
 
 
 if __name__ == '__main__':

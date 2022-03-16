@@ -1,6 +1,6 @@
 from typing import List, Literal, Dict, Union
 from pydantic import BaseModel, Field, validator
-from logging import config
+from src.utils.logger import get_custom_logger
 from src.domain.config.config import ConfigSource
 from src.domain.parameter_locations.parameter_locations import ParameterLocationSource
 from src.domain.parameter_locations.parameter import Parameter, ParameterGroup
@@ -12,8 +12,7 @@ import logging
 import os
 
 
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class Condition:

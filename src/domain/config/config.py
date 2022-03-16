@@ -1,13 +1,9 @@
 from pydantic import BaseModel, Field, validator
 from typing import List
-from logging import config
+from src.utils.logger import get_custom_logger
 from .config_exception import DuplicateMarkerError
 
-import logging
-import os
-
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class ConfigSource(BaseModel):

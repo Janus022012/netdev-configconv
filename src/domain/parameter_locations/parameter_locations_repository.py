@@ -1,16 +1,13 @@
 from abc import ABC, abstractmethod
-from email import message
 from typing import List
-from logging import config
+from src.utils.logger import get_custom_logger
 from .parameter_locations import ParameterLocations
 from .parameter_locations_exceptions import ParameterSheetNotExistError
 from .parameter import ParameterGroup
 
-import logging
 import os
 
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class ParameterLocationsRepository(ABC):
@@ -20,9 +17,6 @@ class ParameterLocationsRepository(ABC):
 
     Attributes:
         parameter_sheet_file (str): パラメータシートが存在するファイルパス
-        
-    Notes:
-        本クラスはシングルトンパターンで実装されている。
 
     """
     def __init__(self, parameter_sheet_file: str):
@@ -31,19 +25,6 @@ class ParameterLocationsRepository(ABC):
 
         self.instance = None
         self.parameter_sheet_file = parameter_sheet_file
-
-
-    def __new__(cls, *args, **kargs):
-
-        logger.debug(f"Constructing a instance in the ParameterLocationsRepository...")
-
-        if not hasattr(cls, "instance"):
-
-            logger.debug(f"ParameterLocationRepository doesn't have a instance, now creating...")
-
-            cls.instance = super(ParameterLocationsRepository, cls).__new__(cls, *args, **kargs)
-
-        return cls.instance
 
 
     @property

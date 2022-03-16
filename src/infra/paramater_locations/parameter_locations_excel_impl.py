@@ -1,18 +1,15 @@
 from typing import List
-from logging import config
+from src.utils.logger import get_custom_logger
 
 from .parameter_locations_excel_impl_exceptions import SheetNotExistError
 from src.domain.parameter_locations.parameter import ParameterGroup, Parameter
 from src.domain.parameter_locations.parameter_locations import ParameterLocations
 from src.domain.parameter_locations.parameter_locations_repository import ParameterLocationsRepository
 
-import logging
 import openpyxl
-import os
 
 
-config.fileConfig(os.path.abspath("logger.conf"), disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+logger = get_custom_logger(__name__)
 
 
 class ParameterLocationsExcelImpl(ParameterLocationsRepository):
@@ -23,13 +20,10 @@ class ParameterLocationsExcelImpl(ParameterLocationsRepository):
     Attributes:
         parameter_sheet_file (str): パラメータシートが存在するファイルパス
         
-    Notes:
-        本クラスはシングルトンパターンで実装されている。
-
     """
 
     def __init__(self, parameter_sheet_file: str):
-        super(ParameterLocationsExcelImpl, self).__init__(parameter_sheet_file)
+        super().__init__(parameter_sheet_file)
         self.workbook = openpyxl.load_workbook(self.parameter_sheet_file)
 
 
