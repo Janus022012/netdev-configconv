@@ -17,6 +17,7 @@ class ConfigRepository(ABC):
 
     Attributes:
         config_sample_file str: ConfigSampleFileが存在するファイルパス
+        
     """
 
     def __init__(self, config_sample_file: str) -> None:
