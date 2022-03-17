@@ -3,49 +3,14 @@ from pydantic import BaseModel, Field, validator
 from src.utils.logger import get_custom_logger
 from src.domain.config.config import ConfigSource
 from src.domain.parameter_locations.parameter_locations import ParameterLocationSource
-from src.domain.parameter_locations.parameter import Parameter, ParameterGroup
-
-import abc
+from src.domain.parameter_locations.parameter import ParameterGroup
+from .condition import IsEmptyCondition, IsContainedCondition
+from .action import Action
+from .validator import RegexValidator, NumberRangeValidator
 import copy
-import re
-import logging
-import os
 
 
 logger = get_custom_logger(__name__)
-
-
-class Condition:
-    @abc.abstractmethod
-    def evaluate(self, parameters: List[Parameter]) -> bool:
-        raise NotImplementedError("The 'evaluate' method must be implemented")
-
-
-class IsEmptyCondition(Condition, BaseModel):
-    type: Literal['isEmpty']
-    target_parameters: List[str] = Field(..., min_items=1)
-
-    def evaluate(self, parameter_group: ParameterGroup) -> bool:
-        for target_parameter in self.target_parameters:
-            if target_parameter in parameter_group:
-                if parameter_group.get(target_parameter).value:
-                    return False
-        return True
-
-
-class IsContainedCondition(Condition, BaseModel):
-    type: Literal['isContained']
-    target_parameters: List[str] = Field(..., min_items=1)
-    target_string: str = Field(..., min_length=1)
-
-    def evaluate(self, parameter_group: ParameterGroup) -> bool:
-        for target_parameter in self.target_parameters:
-            if target_parameter in parameter_group:
-                if not re.search(self.target_string, parameter_group.get(target_parameter).value):
-                    return False
-            else:
-                return False
-        return True
 
 
 class CommandCondition(BaseModel):
@@ -58,89 +23,13 @@ class CommandCondition(BaseModel):
 
     def apply_command_condition(self, parameter_group: ParameterGroup, conditional_commands: List[str], applicable_commands: List[str]) -> List[str]:
         if self.condition.evaluate(parameter_group):
-            return Action.build(self.action).do(self, conditional_commands, applicable_commands)
+            return Action.build(self.action).do(conditional_commands, applicable_commands)
         return applicable_commands
-
-
-class Action:
-    action_type = "Action"
-
-    @abc.abstractmethod
-    def do(self, command_condition: CommandCondition, conditional_command: List[str], applicable_commands: List[str]) -> List[str]:
-        pass
-
-    @classmethod
-    def build(cls, action: str):
-        if cls.action_type == "Action":
-            for subclass_name, subclass in {c.action_type: c for c in cls.__subclasses__()}.items():
-                if subclass_name == action:
-                    return subclass()
-            raise ValueError(f"The action name of '{action}' have not implemented yet")
-        else:
-            raise ValueError(f"The 'build' command cannot call except 'Action' class")
-
-
-class Delete(Action):
-    action_type = "Delete"
-
-    def do(self, command_condition: CommandCondition, conditional_command: List[str], applicable_commands: List[str]) -> List[str]:
-        result: List[str] = []
-
-        for ac in applicable_commands:
-            flag = True
-            for cc in conditional_command:
-                if re.search(ac, cc):
-                    flag = False
-            if flag:
-                result.append(ac)
-        return result
-
-
-class Add(Action):
-    action_type = "Add"
-
-    def do(self, command_condition: CommandCondition, conditional_command: List[str], applicable_commands: List[str]) -> List[str]:
-        return copy.copy(applicable_commands) + copy.copy(conditional_command)
-
-
-class CustomValidator:
-    @abc.abstractmethod
-    def is_valid(self, parameter: Parameter) -> bool:
-        raise NotImplementedError("The 'validate' method of the Validator must be implemented")
-
-
-class RegexValidator(CustomValidator, BaseModel):
-    validator_type: Literal['RegexValidator']
-    parameter_name: str = Field(..., min_length=1)
-    pattern: str = Field(..., min_length=1)
-
-    def is_valid(self, parameter_group: ParameterGroup) -> bool:
-        parameter =  parameter_group.get(self.parameter_name)
-        if parameter:
-            return True if re.search(self.pattern, parameter.value) else False
-        else:
-            return False
-
-class NumberRangeValidator(CustomValidator, BaseModel):
-    validator_type: Literal['regexValidator']
-    parameter_name: str = Field(..., min_length=1)
-    min: int = Field(...)
-    max: int = Field(...)
-
-    def is_valid(self, parameter_group: ParameterGroup) -> bool:
-        parameter =  int(parameter_group.get(self.parameter_name))
-        if min <= parameter <= max:
-            return True
-        else:
-            return False
     
     
 class ParamsValidation(BaseModel):
     validator: Union[RegexValidator, NumberRangeValidator] = Field(..., discriminator='validator_type')
-    # TODO Validationの仕組みをどうするか。
-    #       ・やりたい事
-    #           レベルに応じて、処理の中断具合を変えたい(アプリケーションの停止、デバイス単位の停止など)
-    # level: Literal["Error", "Warning", "Info"] = "Info"
+    level: Literal["Error", "Warning", "Info"] = "Info"
 
 
     def apply_validation(self, parameter_group: ParameterGroup) -> bool:
