@@ -4,8 +4,6 @@ syslog function all warning
 !
 %%host_name%%
 !
-username esmile password plain esmile administrator
-!
 !
 !
 !
@@ -97,10 +95,7 @@ sntp-client enable
 ntp-server server 172.x.x.x
 !
 snmp ip enable
-snmp ip community esmile read-only
-snmp ip trap destination 172.x.x.x esmile v2
 snmp ip trap interface VLAN1
-snmp ip trap esmile generic-trap all
 snmp ip permit 10.0.0.0/8
 !
 !

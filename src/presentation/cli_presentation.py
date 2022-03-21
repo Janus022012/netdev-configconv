@@ -3,6 +3,9 @@ import os
 from typing import Dict
 
 from .abstract_presentation import AbstractPresentation
+from src.utils.logger import get_custom_logger
+
+logger = get_custom_logger(__name__)
 
 
 class CliPresentation(AbstractPresentation):
