@@ -3,12 +3,22 @@ import os
 from typing import Dict
 
 from .abstract_presentation import AbstractPresentation
+from .presentation_exception import CommandNotExistError, RequiredFileNotExistError
 from src.utils.logger import get_custom_logger
 
 logger = get_custom_logger(__name__)
 
 
 class CliPresentation(AbstractPresentation):
+    """CliPresentation
+    
+    CliPresentationは、コマンドから実行に必要な引数を取得するクラスである。
+
+    Attributes:
+        available_commands (List[str]): 利用可能なコマンドの配列
+
+    """
+
     def __init__(self):
         super().__init__()
 
@@ -29,16 +39,27 @@ class CliPresentation(AbstractPresentation):
         return args
 
     def run(self) -> Dict[str, str]:
+        """run
+
+        run関数は、CLIコマンドから実行に必要な情報を取得するために関数である。
+
+        Returns:
+            Dict[str, str]: 取得した引数の引数名とデータの仮想配列
+        
+        """
+        logger.debug("Getting args from cli commands...")
+
         args = vars(self._parse_arguments())
 
         if "command" in args:
             if args["command"] not in self.available_commands:
-                raise ValueError("コマンドは{}から選択してください。".format(self.available_commands))
-        else:
-            raise ValueError("引数にコマンドが存在しません。")
+                raise CommandNotExistError({"command": args["command"], "available_commands": self.available_commands})
 
-        for file_path in [args["config_sample_file"], args["parameter_sheet_file"], args["rule_file"], args["output_path"]]:
-            if not os.path.exists(file_path):
-                raise FileNotFoundError("入力として指定されたパス({})が存在しません。".format(file_path))
+        for file_type in ["config_sample_file", "parameter_sheet_file", "rule_file", "output_path"]:
+            if not os.path.exists(args[file_type]):
+                raise RequiredFileNotExistError({"file_type": file_type, "file_path": args[file_type]})
+
+        logger.debug(f"The result of getting args from cli commands is {args}")
+        logger.debug("Getting args from cli commands has been completed successfully")
 
         return args
