@@ -9,4 +9,4 @@ class CommandNotExistError(CLIPresentationError):
 
 
 class RequiredFileNotExistError(CLIPresentationError):
-    ja_message = "{type}: {file_path}が存在しません。"
+    ja_message = "{file_type}: {file_path}が存在しません。"

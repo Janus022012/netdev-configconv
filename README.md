@@ -20,7 +20,7 @@ C:\>git clone https://github.com/TomoyaKamei/netdevpy.git
 2. ```python -m venv (仮想環境名)```により、pythonの仮想環境を作成する。
 ```
 C:\>cd netdevpy
-C:\netdevpy>python venv -m venv
+C:\netdevpy>python -m venv venv
 ```
 3. 仮想環境を起動する。
 ```
