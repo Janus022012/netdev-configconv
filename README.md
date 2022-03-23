@@ -1,7 +1,7 @@
-## netdevpyについて
+## netdev-configconvについて
 
 ### 概要
-- netdevpyは、パラメータシートからコンフィグ、またはコンフィグからパラメータシート間の変換を行うPythonツールです。
+- netdev-configconvは、パラメータシートからコンフィグ、またはコンフィグからパラメータシート間の変換を行うPythonツールです。
 
 ### 仕組み
 - パラメータシートからコンフィグを作成するためには、以下の三点が必要です。
@@ -11,40 +11,40 @@
 - パラメータシートからルールファイルに基づいてパラメータを取得し、コマンドへと変換後、コンフィグサンプルファイルを用いてコンフィグを作成します。
 
 
-## netdevpyのインストール方法
+## netdev-configconvのインストール方法
 ### Pythonインタープリタで実行する場合
 1. ```git clone```により、本リポジトリをコピーする。
 ```
-C:\>git clone https://github.com/TomoyaKamei/netdevpy.git
+C:\>git clone https://github.com/TomoyaKamei/netdev-configconv.git
 ```
 2. ```python -m venv (仮想環境名)```により、pythonの仮想環境を作成する。
 ```
-C:\>cd netdevpy
-C:\netdevpy>python -m venv venv
+C:\>cd netdev-configconv
+C:\netdev-configconv>python -m venv venv
 ```
 3. 仮想環境を起動する。
 ```
-C:\netdevpy>./venv/Script/activate
-(venv)C:\netdevpy>
+C:\netdev-configconv>./venv/Script/activate
+(venv)C:\netdev-configconv>
 ```
 
 4. ```pip install -r requirements.txt```により、pythonの仮想環境に必要なパッケージをインストールする。
 ```
-(venv)C:\netdevpy>pip install -r requirements.txt
+(venv)C:\netdev-configconv>pip install -r requirements.txt
 ```
 
 ### .exeファイル形式で実行する場合
 - ※前節のPythonインタープリタで実行する方法を事前に実行して下さい。
 1. pyinstallerを使用して.exeファイル化する。作成されたファイルは、/dist配下に存在する。
 ```
-(venv)C:\netdevpy>make build
+(venv)C:\netdev-configconv>make build
 ```
 2. 必要な場合、環境変数を通す。
 ```
-(venv)C:\netdevpy>SET PATH=%PATH%;C:\netdevpy\dist
+(venv)C:\netdev-configconv>SET PATH=%PATH%;C:\netdev-configconv\dist
 ```
 
-## netdevpyの使用方法
+## netdev-configconvの使用方法
 
 ### パラメータシートからコンフィグの作成
 - 以下の書式で実行する。
@@ -55,18 +55,18 @@ C:\netdevpy>./venv/Script/activate
     - ```-es, --exception_sheet```は、コンフィグ作成に用いないシートを記述する。
 - Pythonでの実行例
     ```
-    (venv)C:\netdevpy>python netdevpy.py create_config -cs ./data/input/config_sample/wa_config.log -ps ./data/input/parameter_sheets/WA1512パラメータシート.xlsx -rf ./data/input/rule/wa_rule.yml -op ./data/output/config/ -es 改版履歴
+    (venv)C:\netdev-configconv>python netdev-configconv.py create_config -cs ./data/input/config_sample/wa_config.log -ps ./data/input/parameter_sheets/WA1512パラメータシート.xlsx -rf ./data/input/rule/wa_rule.yml -op ./data/output/config/ -es 改版履歴
     ```
 - exeファイルでの実行例
     ```
-    (venv)C:\netdevpy\dist>netdevpy create_config -cs ./data/input/config_sample/wa_config.log -ps ./data/input/parameter_sheets/WA1512パラメータシート.xlsx -rf ./data/input/rule/wa_rule.yml -op ./data/output/config/ -es 改版履歴
+    (venv)C:\netdev-configconv\dist>netdev-configconv create_config -cs ./data/input/config_sample/wa_config.log -ps ./data/input/parameter_sheets/WA1512パラメータシート.xlsx -rf ./data/input/rule/wa_rule.yml -op ./data/output/config/ -es 改版履歴
     ```
 
 ### コンフィグからパラメーターシートの更新
 - ※未実装
 
 
-## netdevpyの簡易リファレンス
+## netdev-configconvの簡易リファレンス
 
 ### Ruleファイル
 #### 概要

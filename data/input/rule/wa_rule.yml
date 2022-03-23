@@ -1,5 +1,6 @@
 common_parameter:
   filling: "!"
+  
 converter_rules:
   HOSTNAME:
     description: "ホスト名"

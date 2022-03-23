@@ -25,7 +25,7 @@ class CliPresentation(AbstractPresentation):
     def _parse_arguments(self):
         exceptional_sheets_lambda = lambda x:list(map(str, x.split(',')))
 
-        parser = argparse.ArgumentParser("netdevpy", description="本プログラムはエクセルからコンフィグファイルを作成するためのプログラムです。")
+        parser = argparse.ArgumentParser("netdev-configconv", description="本プログラムはエクセルからコンフィグファイルを作成するためのプログラムです。")
         subparsers = parser.add_subparsers(help='help for subcommand')
         run_parser = subparsers.add_parser('create_config', help="エクセルファイルからコンフィグファイルを作成する際に使用します。")
         run_parser.set_defaults(command="create_config")
